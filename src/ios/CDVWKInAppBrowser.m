@@ -397,7 +397,6 @@ static CDVWKInAppBrowser* instance = nil;
     }
 }
 
-
 //Synchronus helper for javascript evaluation
 - (void)evaluateJavaScript:(NSString *)script {
     __block NSString* _script = script;
@@ -547,7 +546,7 @@ static CDVWKInAppBrowser* instance = nil;
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
                                                       messageAsDictionary:@{@"type":@"loadstop", @"url":url}];
         [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
-        
+
         [self.commandDelegate sendPluginResult:pluginResult callbackId:self.callbackId];
     }
 }

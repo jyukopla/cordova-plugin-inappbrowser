@@ -94,6 +94,10 @@
             } else {
                 throw new Error('insertCSS requires exactly one of code or file to be specified');
             }
+        },
+
+        getCookies: function (urls, cb) {
+            exec(cb, null, 'InAppBrowser', 'getCookies', [urls, !!cb]);
         }
     };
 
