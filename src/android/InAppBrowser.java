@@ -77,6 +77,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.HashMap;
 import java.util.StringTokenizer;
@@ -160,6 +161,7 @@ public class InAppBrowser extends CordovaPlugin {
             }
             final String target = t;
             final HashMap<String, String> features = parseFeature(args.optString(2));
+            final org.json.JSONObject cookies = args.getJSONObject(3);
 
             LOG.d(LOG_TAG, "target = " + target);
 
@@ -225,7 +227,7 @@ public class InAppBrowser extends CordovaPlugin {
                         // load in InAppBrowser
                         else {
                             LOG.d(LOG_TAG, "loading in InAppBrowser");
-                            result = showWebPage(url, features);
+                            result = showWebPage(url, features, cookies);
                         }
                     }
                     // SYSTEM
@@ -236,7 +238,7 @@ public class InAppBrowser extends CordovaPlugin {
                     // BLANK - or anything else
                     else {
                         LOG.d(LOG_TAG, "in blank");
-                        result = showWebPage(url, features);
+                        result = showWebPage(url, features, cookies);
                     }
 
                     PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, result);
@@ -624,7 +626,7 @@ public class InAppBrowser extends CordovaPlugin {
      * @param url the url to load.
      * @param features jsonObject
      */
-    public String showWebPage(final String url, HashMap<String, String> features) {
+    public String showWebPage(final String url, HashMap<String, String> features, org.json.JSONObject initialCookies) {
         // Determine if we should hide the location bar.
         showLocationBar = true;
         showZoomControls = true;
@@ -991,6 +993,18 @@ public class InAppBrowser extends CordovaPlugin {
                     CookieManager.getInstance().removeAllCookie();
                 } else if (clearSessionCache) {
                     CookieManager.getInstance().removeSessionCookie();
+                }
+
+                final java.util.Iterator<String> cookieIterator = initialCookies.keys();
+                while (cookieIterator.hasNext()) {
+                    final String cookieUrl = cookieIterator.next();
+                    try {
+                        CookieManager.getInstance().setCookie(
+                            cookieUrl, initialCookies.getString(cookieUrl)
+                        );
+                    } catch (org.json.JSONException e) {
+                        // just continue for the next cookie
+                    }
                 }
 
                 // Enable Thirdparty Cookies on >=Android 5.0 device

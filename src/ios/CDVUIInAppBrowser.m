@@ -93,6 +93,7 @@ static CDVUIInAppBrowser* instance = nil;
     NSString* url = [command argumentAtIndex:0];
     NSString* target = [command argumentAtIndex:1 withDefault:kInAppBrowserTargetSelf];
     NSString* options = [command argumentAtIndex:2 withDefault:@"" andClass:[NSString class]];
+    NSDictionary* cookies = [command argumentAtIndex:3 withDefault:@{} andClass:[NSDictionary class]];
 
     self.callbackId = command.callbackId;
 
@@ -113,7 +114,7 @@ static CDVUIInAppBrowser* instance = nil;
         } else if ([target isEqualToString:kInAppBrowserTargetSystem]) {
             [self openInSystem:absoluteUrl];
         } else { // _blank or anything else
-            [self openInInAppBrowser:absoluteUrl withOptions:options];
+            [self openInInAppBrowser:absoluteUrl withOptions:options withCookies:cookies];
         }
 
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
@@ -125,7 +126,7 @@ static CDVUIInAppBrowser* instance = nil;
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
-- (void)openInInAppBrowser:(NSURL*)url withOptions:(NSString*)options
+- (void)openInInAppBrowser:(NSURL*)url withOptions:(NSString*)options withCookies:(NSDictionary*)cookies
 {
     CDVInAppBrowserOptions* browserOptions = [CDVInAppBrowserOptions parseOptions:options];
 
@@ -147,6 +148,36 @@ static CDVUIInAppBrowser* instance = nil;
         {
             if (![cookie.domain isEqual: @".^filecookies^"] && cookie.isSessionOnly) {
                 [storage deleteCookie:cookie];
+            }
+        }
+    }
+
+    if ([cookies count] > 0) {
+        NSHTTPCookieStorage *storage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+        [storage setCookieAcceptPolicy:NSHTTPCookieAcceptPolicyAlways];
+        for (id key in cookies) {
+            NSString *cookieUrl = key;
+            NSString *cookieString = [cookies objectForKey:key];
+            NSArray *cookieAssignments = [cookieString componentsSeparatedByString:@"; "];
+            for (id cookieAssignment in cookieAssignments) {
+                NSRange rangeOfSpace = [cookieAssignment rangeOfString:@"="];
+                NSString *cookieName = rangeOfSpace.location == NSNotFound ? cookieAssignment : [cookieAssignment substringToIndex:rangeOfSpace.location];
+                NSString *cookieValue = rangeOfSpace.location == NSNotFound ? nil :[cookieAssignment substringFromIndex:rangeOfSpace.location + 1];
+                if (cookieName != nil && cookieValue != nil) {
+                    NSMutableDictionary *cookieProperties = [NSMutableDictionary dictionary];
+
+                    [cookieProperties setObject:cookieName forKey:NSHTTPCookieName];
+                    [cookieProperties setObject:cookieValue forKey:NSHTTPCookieValue];
+                    [cookieProperties setObject:cookieUrl forKey:NSHTTPCookieOriginURL];
+                    [cookieProperties setObject:@"/" forKey:NSHTTPCookiePath];
+
+                    NSHTTPCookie *storableCookie = [NSHTTPCookie cookieWithProperties:cookieProperties];
+                    [storage setCookie:storableCookie];
+
+                    NSArray* cookieArray = [NSArray arrayWithObjects:storableCookie, nil];
+                    NSURL *documentUrl = [[NSURL alloc] initWithString:cookieUrl];
+                    [storage setCookies:cookieArray forURL:documentUrl mainDocumentURL:nil];
+                }
             }
         }
     }
