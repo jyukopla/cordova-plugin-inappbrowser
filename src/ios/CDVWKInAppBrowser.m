@@ -347,6 +347,32 @@ static CDVWKInAppBrowser* instance = nil;
     });
 }
 
+- (void)getCookies:(CDVInvokedUrlCommand*)command
+{
+    CDVPluginResult* pluginResult = nil;
+    NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
+
+    NSString *url;
+    NSArray *urls = [command.arguments objectAtIndex:0];
+
+    for (url in urls) {
+        __block NSArray* cookies = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:url]];
+        __block NSString *value = @"";
+        [cookies enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSHTTPCookie *cookie = obj;
+            if ([value length] != 0) {
+                 value = [value stringByAppendingString:@"; "];
+            }
+            value = [value stringByAppendingString:[NSString stringWithFormat: @"%@=%@", cookie.name, cookie.value]];
+        }];
+        result[url] = value;
+    }
+
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:result];
+
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
 - (void)openInCordovaWebView:(NSURL*)url withOptions:(NSString*)options
 {
     NSURLRequest* request = [NSURLRequest requestWithURL:url];
