@@ -84,6 +84,12 @@ interface InAppBrowser extends Window {
      * @param callback  The function that executes after the CSS is injected.
      */
     insertCSS(css: { code: string } | { file: string }, callback: () => void): void;
+    /**
+     * Get cookies for given urls.
+     * @param urls List of urls to fetch the cookie for.
+     * @param callback  The function that executes with the list of fetched cookies.
+     */
+    getCookies(urls: string[], callback: (cookies: string[]) => void): void;
 }
 
 type InAppBrowserEventListenerOrEventListenerObject = InAppBrowserEventListener | InAppBrowserEventListenerObject;

@@ -347,6 +347,41 @@ static CDVWKInAppBrowser* instance = nil;
     });
 }
 
+- (void)getCookies:(CDVInvokedUrlCommand*)command
+{
+    NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
+    NSArray *urls = [command.arguments objectAtIndex:0];
+
+    WKWebsiteDataStore* dataStore = self.inAppBrowserViewController.webView.configuration.websiteDataStore;
+    WKHTTPCookieStore* cookieStore = dataStore.httpCookieStore;
+
+    [cookieStore getAllCookies:^(NSArray* cookies) {
+        __block CDVPluginResult* pluginResult = nil;
+        __block NSString *url;
+        __block NSString *value = @"";
+
+        for (url in urls) {
+            NSHTTPCookie* cookie;
+            for (cookie in cookies) {
+                NSRange textRange =[url rangeOfString:cookie.domain];
+                if(textRange.location != NSNotFound) {
+                    if ([value length] != 0) {
+                         value = [value stringByAppendingString:@"; "];
+                    }
+                    value = [value stringByAppendingString:[NSString stringWithFormat: @"%@=%@", cookie.name, cookie.value]];
+                    // NSLog(@"Domain: %@", cookie.domain);
+                    // NSLog(@"Cookie: %@", cookie.name);
+                    // NSLog(@"Value: %@", cookie.value);
+                }
+            }
+            result[url] = value;
+        }
+
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:result];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }];
+}
+
 - (void)openInCordovaWebView:(NSURL*)url withOptions:(NSString*)options
 {
     NSURLRequest* request = [NSURLRequest requestWithURL:url];
