@@ -556,6 +556,12 @@ public class InAppBrowser extends CordovaPlugin {
                             dialog.dismiss();
                             dialog = null;
                         }
+                        if (url.equals(new String("about:blank"))) {
+                          childView.onPause();
+                          childView.removeAllViews();
+                          childView.destroyDrawingCache();
+                          childView.destroy();
+                       }
                     }
                 });
                 // NB: From SDK 19: "If you call methods on WebView from any thread
